@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
         dup2(fd[READ_END], STDIN_FILENO); // Redireccionamos la entrada estándar al pipe
         close(fd[READ_END]);              // Cerramos el descriptor de lectura
 
-        execlp("./mayus", "./mayus", NULL);                       // Ejecutamos el programa mayus
+        execlp("./mayusc", "./mayusc", NULL);                     // Ejecutamos el programa mayus
         fprintf(stderr, "Error al ejecutar el programa mayus\n"); // Este código sólo se ejecuta si hubo un error en execlp
         return EXIT_FAILURE;
     }
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
         dup2(fd[WRITE_END], STDOUT_FILENO); // Redireccionamos la salida estándar al pipe
         close(fd[WRITE_END]);               // Cerramos el descriptor de escritura
 
-        execlp("ls", "ls", NULL);                              // Ejecutamos el programa ls
+        execlp("ll", "ll", NULL);                              // Ejecutamos el programa ls
         fprintf(stderr, "Error al ejecutar el programa ls\n"); // Este código sólo se ejecuta si hubo un error en execlp
         return EXIT_FAILURE;
     }
