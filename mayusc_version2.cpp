@@ -1,45 +1,52 @@
-#include <iostream>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 
-int main()
+#define READ_END 0
+#define WRITE_END 1
+
+int main(int argc, char *argv[])
 {
-    int pipefd[2];
+    int fd[2];
     pid_t pid;
 
-    if (pipe(pipefd) == -1)
+    if (pipe(fd) == -1)
     {
-        perror("pipe");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Error al crear el pipe\n");
+        return EXIT_FAILURE;
     }
 
     pid = fork();
 
-    if (pid == -1)
+    if (pid < 0)
     {
-        perror("fork");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Error al crear un nuevo proceso\n");
+        return EXIT_FAILURE;
     }
 
     if (pid == 0)
-    {                     // Proceso hijo - mayusc
-        close(pipefd[1]); // Cerramos la escritura en el pipe
+    {                         // Proceso hijo
+        close(fd[WRITE_END]); // Cerramos el descriptor de escritura
 
-        dup2(pipefd[0], STDIN_FILENO); // Redireccionamos la entrada estándar al pipe
+        dup2(fd[READ_END], STDIN_FILENO); // Redireccionamos la entrada estándar al pipe
+        close(fd[READ_END]);              // Cerramos el descriptor de lectura
 
-        execlp("mayusc", "mayusc", NULL); // Ejecutamos el programa mayusc
-        perror("execlp");                 // Si execlp retorna, hubo un error
-        exit(EXIT_FAILURE);
+        execlp("./mayus", "./mayus", NULL);                       // Ejecutamos el programa mayus
+        fprintf(stderr, "Error al ejecutar el programa mayus\n"); // Este código sólo se ejecuta si hubo un error en execlp
+        return EXIT_FAILURE;
     }
     else
-    {                     // Proceso padre - ll
-        close(pipefd[0]); // Cerramos la lectura en el pipe
+    {                        // Proceso padre
+        close(fd[READ_END]); // Cerramos el descriptor de lectura
 
-        dup2(pipefd[1], STDOUT_FILENO); // Redireccionamos la salida estándar al pipe
+        dup2(fd[WRITE_END], STDOUT_FILENO); // Redireccionamos la salida estándar al pipe
+        close(fd[WRITE_END]);               // Cerramos el descriptor de escritura
 
-        execlp("ll", "ll", NULL); // Ejecutamos el programa ll
-        perror("execlp");         // Si execlp retorna, hubo un error
-        exit(EXIT_FAILURE);
+        execlp("ls", "ls", NULL);                              // Ejecutamos el programa ls
+        fprintf(stderr, "Error al ejecutar el programa ls\n"); // Este código sólo se ejecuta si hubo un error en execlp
+        return EXIT_FAILURE;
     }
 
     return 0;
