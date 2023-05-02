@@ -1,42 +1,52 @@
 #include <unistd.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
-#include <iostream>
-#include <cstring>
 
-using namespace std;
+#define READ_END 0
+#define WRITE_END 1
 
-int main() {
+int main(int argc, char *argv[])
+{
     int fd[2];
     pid_t pid;
-    char input[100];
-    memset(input, 0, sizeof(input));
 
-    if (pipe(fd) == -1) {
-        cerr << "Error: Failed to create pipe" << endl;
-        return 1;
+    if (pipe(fd) == -1)
+    {
+        fprintf(stderr, "Error al crear el pipe\n");
+        return EXIT_FAILURE;
     }
 
     pid = fork();
-    if (pid < 0) {
-        cerr << "Error: Failed to fork" << endl;
-        return 1;
+
+    if (pid < 0)
+    {
+        fprintf(stderr, "Error al crear un nuevo proceso\n");
+        return EXIT_FAILURE;
     }
-    else if (pid == 0) {
-        // Child process - will execute mayusc
-        close(fd[1]);  // Close unused write end
-        dup2(fd[0], STDIN_FILENO);  // Redirect read end to stdin
-        close(fd[0]);  // Close read end
-        execlp("./mayusc", "./mayusc", NULL);  // Execute mayusc
+
+    if (pid == 0)
+    {                         // Proceso hijo
+        close(fd[WRITE_END]); // Cerramos el descriptor de escritura
+
+        dup2(fd[READ_END], STDIN_FILENO); // Redireccionamos la entrada estándar al pipe
+        close(fd[READ_END]);              // Cerramos el descriptor de lectura
+
+        execlp("./mayus", "./mayus", NULL);                       // Ejecutamos el programa mayus
+        fprintf(stderr, "Error al ejecutar el programa mayus\n"); // Este código sólo se ejecuta si hubo un error en execlp
+        return EXIT_FAILURE;
     }
-    else {
-        // Parent process - will read input from user
-        close(fd[0]);  // Close unused read end
-        cout << "Enter text to be converted to uppercase:" << endl;
-        cin.getline(input, sizeof(input));
-        write(fd[1], input, strlen(input));  // Write input to pipe
-        close(fd[1]);  // Close write end
-        wait(NULL);  // Wait for child process to complete
+    else
+    {                        // Proceso padre
+        close(fd[READ_END]); // Cerramos el descriptor de lectura
+
+        dup2(fd[WRITE_END], STDOUT_FILENO); // Redireccionamos la salida estándar al pipe
+        close(fd[WRITE_END]);               // Cerramos el descriptor de escritura
+
+        execlp("ls", "ls", NULL);                              // Ejecutamos el programa ls
+        fprintf(stderr, "Error al ejecutar el programa ls\n"); // Este código sólo se ejecuta si hubo un error en execlp
+        return EXIT_FAILURE;
     }
 
     return 0;
